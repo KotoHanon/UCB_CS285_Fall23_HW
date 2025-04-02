@@ -16,6 +16,7 @@ def sample_trajectory(
 ) -> Dict[str, np.ndarray]:
     """Sample a rollout in the environment from a policy."""
     ob = env.reset()
+    ob = np.array(ob, dtype=np.float32).reshape(1, -1)
     obs, acs, rewards, next_obs, terminals, image_obs = [], [], [], [], [], []
     steps = 0
     while True:
@@ -29,15 +30,17 @@ def sample_trajectory(
                 cv2.resize(img, dsize=(250, 250), interpolation=cv2.INTER_CUBIC)
             )
 
-        # TODO use the most recent ob and the policy to decide what to do
-        ac: np.ndarray = None
+        '''# TODO use the most recent ob and the policy to decide what to do'''
+        ac: np.ndarray = policy.get_action(ob)
 
-        # TODO: use that action to take a step in the environment
-        next_ob, rew, done, _ = None, None, None, None
+        '''# TODO: use that action to take a step in the environment'''
+        next_ob, rew, done, _ = env.step(ac[0])
+        env.render()
+        next_ob = np.array(next_ob, dtype=np.float32).reshape(1, -1)
 
-        # TODO rollout can end due to done, or due to max_length
+        '''# TODO rollout can end due to done, or due to max_length'''
         steps += 1
-        rollout_done: bool = None
+        rollout_done: bool = (done or steps == max_length)
 
         # record result of taking that action
         obs.append(ob)
