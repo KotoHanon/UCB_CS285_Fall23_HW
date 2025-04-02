@@ -68,17 +68,22 @@ def run_training_loop(args):
 
     for itr in range(args.n_iter):
         print(f"\n********** Iteration {itr} ************")
-        # TODO: sample `args.batch_size` transitions using utils.sample_trajectories
+        '''# TODO: sample `args.batch_size` transitions using utils.sample_trajectories'''
         # make sure to use `max_ep_len`
-        trajs, envsteps_this_batch = None, None  # TODO
+        trajs, envsteps_this_batch = utils.sample_trajectories(env=env, policy=agent.actor, min_timesteps_per_batch=args.batch_size, max_length=max_ep_len)
         total_envsteps += envsteps_this_batch
 
         # trajs should be a list of dictionaries of NumPy arrays, where each dictionary corresponds to a trajectory.
         # this line converts this into a single dictionary of lists of NumPy arrays.
         trajs_dict = {k: [traj[k] for traj in trajs] for k in trajs[0]}
 
-        # TODO: train the agent using the sampled trajectories and the agent's update function
-        train_info: dict = None
+        '''# TODO: train the agent using the sampled trajectories and the agent's update function'''
+        train_info: dict = agent.update(
+            obs=trajs_dict["observation"],
+            actions=trajs_dict["action"],
+            rewards=trajs_dict["reward"],
+            terminals=trajs_dict["terminal"]
+        )
 
         if itr % args.scalar_log_freq == 0:
             # save eval metrics
@@ -124,9 +129,9 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--env_name", type=str, required=True)
-    parser.add_argument("--exp_name", type=str, required=True)
-    parser.add_argument("--n_iter", "-n", type=int, default=200)
+    parser.add_argument("--env_name", type=str, default="CartPole-v0")
+    parser.add_argument("--exp_name", type=str, default="cartpole")
+    parser.add_argument("--n_iter", "-n", type=int, default=100)
 
     parser.add_argument("--use_reward_to_go", "-rtg", action="store_true")
     parser.add_argument("--use_baseline", action="store_true")
@@ -135,7 +140,7 @@ def main():
     parser.add_argument("--gae_lambda", type=float, default=None)
     parser.add_argument("--normalize_advantages", "-na", action="store_true")
     parser.add_argument(
-        "--batch_size", "-b", type=int, default=1000
+        "--batch_size", "-b", type=int, default=100
     )  # steps collected per train iteration
     parser.add_argument(
         "--eval_batch_size", "-eb", type=int, default=400
