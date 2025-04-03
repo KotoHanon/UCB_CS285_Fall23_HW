@@ -129,8 +129,8 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--env_name", type=str, default="CartPole-v0")
-    parser.add_argument("--exp_name", type=str, default="cartpole")
+    parser.add_argument("--env_name", type=str, default="CartPole-v0", required=True)
+    parser.add_argument("--exp_name", type=str, default="cartpole", required=True)
     parser.add_argument("--n_iter", "-n", type=int, default=100)
 
     parser.add_argument("--use_reward_to_go", "-rtg", action="store_true")
@@ -140,14 +140,14 @@ def main():
     parser.add_argument("--gae_lambda", type=float, default=None)
     parser.add_argument("--normalize_advantages", "-na", action="store_true")
     parser.add_argument(
-        "--batch_size", "-b", type=int, default=100
+        "--batch_size", "-b", type=int, default=64
     )  # steps collected per train iteration
     parser.add_argument(
         "--eval_batch_size", "-eb", type=int, default=400
     )  # steps collected per eval iteration
 
     parser.add_argument("--discount", type=float, default=1.0)
-    parser.add_argument("--learning_rate", "-lr", type=float, default=5e-3)
+    parser.add_argument("--learning_rate", "-lr", type=float, default=1e-3)
     parser.add_argument("--n_layers", "-l", type=int, default=2)
     parser.add_argument("--layer_size", "-s", type=int, default=64)
 
