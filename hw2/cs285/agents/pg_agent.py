@@ -10,20 +10,20 @@ from torch import nn
 
 class PGAgent(nn.Module):
     def __init__(
-        self,
-        ob_dim: int,
-        ac_dim: int,
-        discrete: bool,
-        n_layers: int,
-        layer_size: int,
-        gamma: float,
-        learning_rate: float,
-        use_baseline: bool,
-        use_reward_to_go: bool,
-        baseline_learning_rate: Optional[float],
-        baseline_gradient_steps: Optional[int],
-        gae_lambda: Optional[float],
-        normalize_advantages: bool,
+            self,
+            ob_dim: int,
+            ac_dim: int,
+            discrete: bool,
+            n_layers: int,
+            layer_size: int,
+            gamma: float,
+            learning_rate: float,
+            use_baseline: bool,
+            use_reward_to_go: bool,
+            baseline_learning_rate: Optional[float],
+            baseline_gradient_steps: Optional[int],
+            gae_lambda: Optional[float],
+            normalize_advantages: bool,
     ):
         super().__init__()
 
@@ -48,11 +48,11 @@ class PGAgent(nn.Module):
         self.normalize_advantages = normalize_advantages
 
     def update(
-        self,
-        obs: Sequence[np.ndarray],
-        actions: Sequence[np.ndarray],
-        rewards: Sequence[np.ndarray],
-        terminals: Sequence[np.ndarray],
+            self,
+            obs: Sequence[np.ndarray],
+            actions: Sequence[np.ndarray],
+            rewards: Sequence[np.ndarray],
+            terminals: Sequence[np.ndarray],
     ) -> dict:
         """The train step for PG involves updating its actor using the given observations/actions and the calculated
         qvals/advantages that come from the seen rewards.
@@ -73,6 +73,7 @@ class PGAgent(nn.Module):
         q_values = np.concatenate(q_values, axis=0)
         terminals = np.concatenate(terminals, axis=0)
 
+        print(q_values)
 
         # step 2: calculate advantages from Q values
         advantages: np.ndarray = self._estimate_advantage(
@@ -109,11 +110,11 @@ class PGAgent(nn.Module):
         return q_values
 
     def _estimate_advantage(
-        self,
-        obs: np.ndarray,
-        rewards: np.ndarray,
-        q_values: np.ndarray,
-        terminals: np.ndarray,
+            self,
+            obs: np.ndarray,
+            rewards: np.ndarray,
+            q_values: np.ndarray,
+            terminals: np.ndarray,
     ) -> np.ndarray:
         """Computes advantages by (possibly) subtracting a value baseline from the estimated Q-values.
 
@@ -124,7 +125,8 @@ class PGAgent(nn.Module):
             advantages = q_values
         else:
             '''# TODO: run the critic and use it as a baseline'''
-            values = self.critic(obs)
+            values = self.critic(obs).detach().cpu().numpy()
+            print(values.shape, q_values.shape)
             assert values.shape == q_values.shape
 
             if self.gae_lambda is None:
@@ -146,9 +148,9 @@ class PGAgent(nn.Module):
                     if terminals[i] == 1:
                         delta[i] = rewards[i] - values[i]
                     else:
-                        delta[i] = rewards[i] + self.gamma * values[i+1] - values[i]
-                    advantages[i] = self.gamma * self.gae_lambda * advantages[i+1] + delta[i]
-                    
+                        delta[i] = rewards[i] + self.gamma * values[i + 1] - values[i]
+                    advantages[i] = self.gamma * self.gae_lambda * advantages[i + 1] + delta[i]
+
                 # remove dummy advantage
                 advantages = advantages[:-1]
 
@@ -167,7 +169,7 @@ class PGAgent(nn.Module):
         involve t)!
         """
         dis_return = np.zeros_like(rewards, dtype=np.float32)
-        G = 0
+        G = 0.0
         for t in reversed(range(len(rewards))):
             G = self.gamma * G + rewards[t]
         for i in range(len(dis_return)):
@@ -180,7 +182,7 @@ class PGAgent(nn.Module):
         in each index t' is sum_{t'=t}^T gamma^(t'-t) * r_{t'}.
         """
         dis_return_to_go = np.zeros_like(rewards, dtype=np.float32)
-        G = 0
+        G = 0.0
         for t in reversed(range(len(rewards))):
             G = self.gamma * G + rewards[t]
             dis_return_to_go[t] = G
