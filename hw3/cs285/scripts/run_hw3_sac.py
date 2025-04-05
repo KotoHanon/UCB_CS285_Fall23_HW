@@ -15,6 +15,7 @@ import numpy as np
 import torch
 from cs285.infrastructure import pytorch_util as ptu
 import tqdm
+import wandb
 
 from cs285.infrastructure import utils
 from cs285.infrastructure.logger import Logger
@@ -25,6 +26,9 @@ import argparse
 
 
 def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
+    wandb.init(
+        project="CS285-HW3-SAC",
+    )
     # set random seeds
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -36,7 +40,7 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
     render_env = config["make_env"](render=True)
 
     ep_len = config["ep_len"] or env.spec.max_episode_steps
-    batch_size = config["batch_size"] or batch_size
+    batch_size = config["batch_size"]
 
     discrete = isinstance(env.action_space, gym.spaces.Discrete)
     assert (
@@ -67,8 +71,9 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
         if step < config["random_steps"]:
             action = env.action_space.sample()
         else:
-            # TODO(student): Select an action
-            action = ...
+            '''# TODO(student): Select an action'''
+            action = agent.get_action(observation)
+            env.render()
 
         # Step the environment and add the data to the replay buffer
         next_observation, reward, done, info = env.step(action)
@@ -89,9 +94,16 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
 
         # Train the agent
         if step >= config["training_starts"]:
-            # TODO(student): Sample a batch of config["batch_size"] transitions from the replay buffer
-            batch = ...
-            update_info = ...
+            '''# TODO(student): Sample a batch of config["batch_size"] transitions from the replay buffer'''
+            batch = replay_buffer.sample(batch_size)
+            update_info = agent.update(
+                observations=batch["observations"],
+                actions=batch["actions"],
+                rewards=batch["rewards"],
+                next_observations=batch["next_observations"],
+                dones=batch["dones"],
+                step=step,
+            )
 
             # Logging
             update_info["actor_lr"] = agent.actor_lr_scheduler.get_last_lr()[0]
@@ -115,6 +127,7 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
             ep_lens = [t["episode_statistics"]["l"] for t in trajectories]
 
             logger.log_scalar(np.mean(returns), "eval_return", step)
+            wandb.log({"eval_return": np.mean(returns)}, step=step)
             logger.log_scalar(np.mean(ep_lens), "eval_ep_len", step)
 
             if len(returns) > 1:
