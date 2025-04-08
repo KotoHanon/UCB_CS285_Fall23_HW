@@ -110,11 +110,12 @@ class ModelBasedAgent(nn.Module):
         obs = ptu.from_numpy(obs)
         acs = ptu.from_numpy(acs)
         next_obs = ptu.from_numpy(next_obs)
-        # TODO(student): update the statistics
-        self.obs_acs_mean = ...
-        self.obs_acs_std = ...
-        self.obs_delta_mean = ...
-        self.obs_delta_std = ...
+        '''# TODO(student): update the statistics'''
+        next_obs_predict = self.dynamics_models(obs, acs)
+        self.obs_acs_mean = torch.mean(next_obs_predict - obs)
+        self.obs_acs_std = torch.std(next_obs_predict - obs)
+        self.obs_delta_mean = torch.mean(next_obs - obs)
+        self.obs_delta_std = torch.std(next_obs - obs)
 
     @torch.no_grad()
     def get_dynamics_predictions(
@@ -219,5 +220,6 @@ class ModelBasedAgent(nn.Module):
                 # TODO(student): implement the CEM algorithm
                 # HINT: you need a special case for i == 0 to initialize
                 # the elite mean and std
+                pass
         else:
             raise ValueError(f"Invalid MPC strategy '{self.mpc_strategy}'")
