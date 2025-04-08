@@ -39,11 +39,15 @@ def collect_mbpo_rollout(
     rollout_len: int = 1,
 ):
     obs, acs, rewards, next_obs, dones = [], [], [], [], []
+    ob = env.reset()
     for _ in range(rollout_len):
-        # TODO(student): collect a rollout using the learned dynamics models
+        '''# TODO(student): collect a rollout using the learned dynamics models
         # HINT: get actions from `sac_agent` and `next_ob` predictions from `mb_agent`.
         # Average the ensemble predictions directly to get the next observation.
-        # Get the reward using `env.get_reward`.
+        # Get the reward using `env.get_reward`.'''
+        ac_dist = sac_agent(torch.tensor(ob, dtype=torch.float))
+        ac = ac_dist.sample()
+        next_ob = mb_agent.get_dynamics_predictions(ob, ac)
 
         obs.append(ob)
         acs.append(ac)
