@@ -77,7 +77,7 @@ def run_training_loop(
     # make the gym environment
     env = config["make_env"]()
     eval_env = config["make_env"]()
-    render_env = config["make_env"](render=True)
+    render_env = config["make_env"](render=False)
 
     ep_len = config["ep_len"] or env.spec.max_episode_steps
 
@@ -121,12 +121,13 @@ def run_training_loop(
         # collect data
         print("Collecting data...")
         if itr == 0:
-            # TODO(student): collect at least config["initial_batch_size"] transitions with a random policy
-            # HINT: Use `utils.RandomPolicy` and `utils.sample_trajectories`
-            trajs, envsteps_this_batch = ...
+            '''# TODO(student): collect at least config["initial_batch_size"] transitions with a random policy
+            # HINT: Use `utils.RandomPolicy` and `utils.sample_trajectories`'''
+            trajs, envsteps_this_batch = utils.sample_trajectories(env=env, policy=utils.RandomPolicy(env), min_timesteps_per_batch=config["initial_batch_size"],
+                                                                   max_length=ep_len)
         else:
-            # TODO(student): collect at least config["batch_size"] transitions with our `actor_agent`
-            trajs, envsteps_this_batch = ...
+            '''# TODO(student): collect at least config["batch_size"] transitions with our `actor_agent`'''
+            trajs, envsteps_this_batch = utils.sample_trajectories(env=env, policy=actor_agent, min_timesteps_per_batch=config["batch_size"], max_length=ep_len)
 
         total_envsteps += envsteps_this_batch
         logger.log_scalar(total_envsteps, "total_envsteps", itr)
@@ -166,9 +167,12 @@ def run_training_loop(
             config["num_agent_train_steps_per_iter"], dynamic_ncols=True
         ):
             step_losses = []
-            # TODO(student): train the dynamics models
+            '''# TODO(student): train the dynamics models
             # HINT: train each dynamics model in the ensemble with a *different* batch of transitions!
-            # Use `replay_buffer.sample` with config["train_batch_size"].
+            # Use `replay_buffer.sample` with config["train_batch_size"].'''
+            for i in range(mb_agent.ensemble_size):
+                batch = replay_buffer.sample(config["train_batch_size"])
+                step_losses.append(mb_agent.update(i, obs=batch["observations"], acs=batch["actions"], next_obs=batch["next_observations"]))
             all_losses.append(np.mean(step_losses))
 
         # on iteration 0, plot the full learning curve
