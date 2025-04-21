@@ -169,8 +169,8 @@ class ModelBasedAgent(nn.Module):
         # We need to repeat our starting obs for each of the rollouts.
         obs = np.tile(obs, (self.ensemble_size, self.mpc_num_action_sequences, 1))
         '''# TODO(student): for each batch of actions in in the horizon...'''
-        action_sequences = action_sequences.reshape(-1, self.mpc_num_action_sequences, self.ac_dim)
-        for acs in action_sequences:
+        for t in range(self.mpc_horizon):
+            acs = action_sequences[:, t, :]
             assert acs.shape == (self.mpc_num_action_sequences, self.ac_dim)
             assert obs.shape == (
                 self.ensemble_size,
@@ -230,9 +230,39 @@ class ModelBasedAgent(nn.Module):
         elif self.mpc_strategy == "cem":
             elite_mean, elite_std = None, None
             for i in range(self.cem_num_iters):
-                # TODO(student): implement the CEM algorithm
+                '''# TODO(student): implement the CEM algorithm
                 # HINT: you need a special case for i == 0 to initialize
-                # the elite mean and std
-                pass              
+                # the elite mean and std'''
+                rewards = self.evaluate_action_sequences(obs, action_sequences)
+
+                elite_idxs = np.argsort(rewards)[-self.cem_num_elites:]
+                elite_acs = action_sequences[elite_idxs]
+
+                new_mean = np.mean(elite_acs, axis=0)
+                new_std = np.std(elite_acs, axis=0)
+
+                if i == 0:
+                    elite_mean, elite_std = new_mean, new_std
+                else:
+                    elite_mean = self.cem_alpha * new_mean + (1 - self.cem_alpha) * elite_mean
+                    elite_std = self.cem_alpha * new_std + (1 - self.cem_alpha) * elite_std
+                
+                action_sequences = np.random.normal(
+                    loc=elite_mean.reshape(1, self.mpc_horizon, self.ac_dim),
+                    scale=elite_std.reshape(1, self.mpc_horizon, self.ac_dim),
+                    size=(self.mpc_num_action_sequences, self.mpc_horizon, self.ac_dim)
+                )
+
+                action_sequences = np.clip(
+                    action_sequences,
+                    self.env.action_space.low,
+                    self.env.action_space.high,
+                )
+            
+            rewards = self.evaluate_action_sequences(obs, action_sequences)
+            best_index = np.argmax(rewards)
+            return action_sequences[best_index][0]
+
+
         else:
             raise ValueError(f"Invalid MPC strategy '{self.mpc_strategy}'")
