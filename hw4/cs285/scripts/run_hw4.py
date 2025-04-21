@@ -47,7 +47,11 @@ def collect_mbpo_rollout(
         # Get the reward using `env.get_reward`.'''
         ac_dist = sac_agent(torch.tensor(ob, dtype=torch.float))
         ac = ac_dist.sample()
-        next_ob = mb_agent.get_dynamics_predictions(ob, ac)
+        next_ob = np.zeros((mb_agent.ensemble_size, 1, env.observation_space.shape[0]))
+        for i in range(mb_agent.ensemble_size):
+            next_ob[i] = mb_agent.get_dynamics_predictions(i, ob.view(1, -1), ac.view(1, -1))
+        next_ob = np.mean(next_ob, axis=0)
+        rew = env.get_reward(next_ob, ac)[0]
 
         obs.append(ob)
         acs.append(ac)
